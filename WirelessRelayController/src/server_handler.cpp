@@ -48,18 +48,70 @@ void ServerHandler::handleRoot() {
     }
     body += "</body></html>";
 
-    callbackFunc("gw");
-    server.send(200, "text/html", body);
-}
+    body = "";
 
-void ServerHandler::setListener(void (*_callback)(String)) {
-    callbackFunc = _callback;
+    for (auto co : *controllers) {
+        body += (co.name);
+        body += " ";
+        body += (co.getValue());
+        body += "<br>";
+    }
+    server.send(200, "text/html", body);
 }
 
 ServerHandler::ServerHandler() {
     server.on("/", [&]() {
         digitalWrite(INDICATOR_LED, INDICATOR_LED_ON);
         handleRoot();
+        Serial.println("\nGET /");
+        for (auto co : *controllers) {
+            Serial.println(co.name);
+            Serial.println(co.getValue());
+        }
         digitalWrite(INDICATOR_LED, INDICATOR_LED_OFF);
     });
+}
+
+void ServerHandler::useController(std::list<Controller> *_controllers) {
+    controllers = _controllers;
+
+    for (Controller &controller : *controllers) {
+        String getUrlPath = "/" + String(controller.GPIO);
+        String toggleUrlPath = "/" + String(controller.GPIO) + "/toggle";
+        String setUrlPath = "/" + String(controller.GPIO) + "/set";
+
+        server.on(getUrlPath, [&]() {
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_ON);
+            server.send(200, "text/plain", String(controller.getValue()));
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_OFF);
+        });
+
+        server.on(toggleUrlPath, [&]() {
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_ON);
+            controller.toggleValue();
+            handleRoot();
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_OFF);
+        });
+
+        server.on(setUrlPath, [&]() {
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_ON);
+
+            for (int i = 0; i < server.args(); ++i) {
+                if (server.argName(i) == "value") {
+                    String argValue = server.arg(i);
+
+                    uint8_t value = controller.getValueRaw();
+                    if (argValue == "1" || argValue == "true" || argValue == "on")
+                        value = ON;
+                    else if (argValue == "0" || argValue == "false" || argValue == "off")
+                        value = OFF;
+
+                    controller.setValue(value);
+                }
+            }
+
+            handleRoot();
+            digitalWrite(INDICATOR_LED, INDICATOR_LED_OFF);
+        });
+    }
 }

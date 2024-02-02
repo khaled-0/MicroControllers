@@ -5,15 +5,13 @@
 #include "server_handler.h"
 #include "utils.h"
 
-#define PIN1 4  // GPIO4
-#define PIN2 5  // GPIO5
-
 // Device will also be accessible via http://<hostname>.local
-const String hostName = "ESP8266";
+const String hostName = "esp8266";
 const String ssid = "A-S-H-F-I-Y-A";
 
 ServerHandler server;
 
+std::list<Controller> controllers;
 // Variable to store the HTTP request
 String header;
 
@@ -32,20 +30,25 @@ unsigned long previousTime = 0;
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
-void listener(String data) {
-    Serial.println(data);
+void onChange(Controller cont) {
+    Serial.println(cont.name + "changes");
+    Serial.println(cont.getValue());
+
+    for (auto co : controllers) {
+        Serial.println("");
+        Serial.println(co.name);
+        Serial.println(co.getValue());
+    }
+}
+
+void setupController() {
+    controllers.push_back(Controller("Pin1", 4, OFF, *onChange));  // GPIO4 D1
+    controllers.push_back(Controller("Pin2", 5, OFF, *onChange));  // GPIO5 D2
 }
 
 void setup() {
     Serial.begin(9600);
-    // Set the pins to output mode
     pinMode(INDICATOR_LED, OUTPUT);
-    pinMode(PIN1, OUTPUT);
-    pinMode(PIN2, OUTPUT);
-
-    // Set outputs to LOW
-    digitalWrite(PIN1, OFF);
-    digitalWrite(PIN2, OFF);
 
     // Connect to Wi-Fi network with SSID and password
     Serial.println("Connecting to SSID: " + ssid);
@@ -55,15 +58,16 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) blinkIndicator();
 
     // Print local IP address and start web server
+    digitalWrite(INDICATOR_LED, INDICATOR_LED_ON);
     Serial.println("Connected to SSID: " + ssid);
     Serial.println("IP address: " + WiFi.localIP().toString());
     if (MDNS.begin(hostName)) Serial.println("MDNS responder started");
-    digitalWrite(INDICATOR_LED, OFF + 1);
 
+    setupController();
+    server.useController(&controllers);
     server.begin();
     Serial.println("HTTP server started at http://" + hostName + ".local");
-
-    server.setListener(listener);
+    digitalWrite(INDICATOR_LED, INDICATOR_LED_OFF);
 }
 
 void loop() {
