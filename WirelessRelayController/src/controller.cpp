@@ -2,7 +2,7 @@
 
 Controller::Controller(String name, uint8_t GPIO,
                        uint8_t value /*= OFF*/,
-                       void (*onChange)(Controller) /*= nullptr*/)
+                       void (*onChange)(Controller*) /*= nullptr*/)
     : name(name),
       GPIO(GPIO),
       value(value),
@@ -21,15 +21,14 @@ uint8_t Controller::getValueRaw() {
 
 void Controller::setValue(uint8_t _value) {
     value = _value;
+    digitalWrite(GPIO, value);
 
-    if (onChange != nullptr) onChange(*this);
+    if (onChange != nullptr) onChange(this);
 }
 
 void Controller::toggleValue() {
-    if (value == ON)
-        value = OFF;
-    else
-        value = ON;
+    value = value == ON ? OFF : ON;
+    digitalWrite(GPIO, value);
 
-    if (onChange != nullptr) onChange(*this);
+    if (onChange != nullptr) onChange(this);
 }

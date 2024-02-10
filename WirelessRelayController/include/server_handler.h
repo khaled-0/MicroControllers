@@ -9,6 +9,7 @@ class ServerHandler {
     ESP8266WebServer server = ESP8266WebServer(80);
     std::list<Controller> *controllers;
     void handleRoot();
+    void redirect(String url = "/");
 
    public:
     ServerHandler();
