@@ -5,7 +5,7 @@
 #include "server_handler.h"
 #include "utils.h"
 
-// Device will also be accessible via http://<hostname>.local
+// Device will also be accessible via http://<hostname>.local or .lan
 const String hostName = "esp8266";
 const String ssid = "A-S-H-F-I-Y-A";
 
