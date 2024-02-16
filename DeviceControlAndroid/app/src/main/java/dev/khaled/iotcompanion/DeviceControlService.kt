@@ -2,12 +2,14 @@ package dev.khaled.iotcompanion
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
 import android.service.controls.Control
 import android.service.controls.ControlsProviderService
 import android.service.controls.DeviceTypes
 import android.service.controls.actions.ControlAction
 import android.service.controls.templates.StatelessTemplate
 import android.util.Log
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -17,8 +19,6 @@ import java.util.function.Consumer
 
 
 class DeviceControlService : ControlsProviderService() {
-    var x = true
-    var y = false
 
     private val controlList: List<Control>
         get() = listOf(
@@ -60,13 +60,18 @@ class DeviceControlService : ControlsProviderService() {
 
                 it.onNext(
                     Control.StatefulBuilder(control).setStatus(Control.STATUS_OK)
-                        .setControlTemplate(StatelessTemplate(control.controlId)).build()
+                        .setControlTemplate(StatelessTemplate(control.controlId)).apply {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                this.setAuthRequired(false)
+                            }
+                        }.build()
                 )
 
             }
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun performControlAction(
         controlId: String, action: ControlAction, consumer: Consumer<Int>
     ) {
