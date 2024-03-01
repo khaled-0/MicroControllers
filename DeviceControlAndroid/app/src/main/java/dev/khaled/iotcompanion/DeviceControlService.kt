@@ -13,6 +13,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URL
 import java.util.concurrent.Flow
 import java.util.function.Consumer
@@ -42,6 +43,7 @@ class DeviceControlService : ControlsProviderService() {
         )
 
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun createPublisherFor(controlIds: MutableList<String>): Flow.Publisher<Control> {
         return Flow.Publisher {
             for (control in controlList) {
@@ -58,18 +60,41 @@ class DeviceControlService : ControlsProviderService() {
 
                 })
 
-                it.onNext(
-                    Control.StatefulBuilder(control).setStatus(Control.STATUS_OK)
-                        .setControlTemplate(StatelessTemplate(control.controlId)).apply {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                this.setAuthRequired(false)
-                            }
-                        }.build()
-                )
 
+                GlobalScope.launch(Dispatchers.IO) {
+//                    val status = getStatus(control.controlId)
+                    //                    DOES NOT Update after click
+
+                    withContext(Dispatchers.Default) {
+                        it.onNext(
+                            Control.StatefulBuilder(control).setStatus(Control.STATUS_OK)
+                                .setControlTemplate(
+                                    StatelessTemplate(control.controlId)
+                                ).apply {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        this.setAuthRequired(false)
+                                    }
+                                }.build()
+                        )
+                    }
+
+                }
             }
         }
     }
+//
+//    private fun getStatus(controlId: String): Boolean {
+//        Log.d(controlId, URL("http://192.168.10.8/4").readText())
+//        if (controlId == "light") {
+//            return URL("http://192.168.10.8/4").readText() == "on"
+//        }
+//
+//        if (controlId == "fan") {
+//            return URL("http://192.168.10.8/5").readText() == "on"
+//        }
+//
+//        return false
+//    }
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun performControlAction(
@@ -80,19 +105,23 @@ class DeviceControlService : ControlsProviderService() {
         )
 
         if (controlId == "light") {
-            GlobalScope.launch(Dispatchers.IO) {
-                URL("http://esp8266.lan/4/toggle").readText()
-
+            runCatching {
+                GlobalScope.launch(Dispatchers.IO) {
+                    URL("http://192.168.10.8/4/toggle").readText()
+                }
             }
         }
 
         if (controlId == "fan") {
-            GlobalScope.launch(Dispatchers.IO) {
-                URL("http://esp8266.lan/5/toggle").readText()
+            runCatching {
+                GlobalScope.launch(Dispatchers.IO) {
+                    URL("http://192.168.10.8/5/toggle").readText()
+                }
             }
         }
 
         consumer.accept(ControlAction.RESPONSE_OK)
+
 
     }
 

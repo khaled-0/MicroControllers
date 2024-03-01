@@ -27,7 +27,7 @@ void ServerHandler::handleRoot() {
     body += "<title>ESP8266 Web Server</title>";
 
     body += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}";
-    body += "button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;";
+    body += "button { border: none; color: white; padding: 16px 40px;";
     body += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}</style></head>";
 
     body += "<body><h1>ESP8266 Web Server</h1>";
@@ -35,11 +35,12 @@ void ServerHandler::handleRoot() {
     // Display current state, and ON/OFF buttons for GPIO Pins
     for (Controller &controller : *controllers) {
         String toggleUrlPath = "/" + String(controller.GPIO) + "/toggle";
-        String buttonLabel = controller.getValueRaw() == (uint8_t)ON ? "OFF" : "ON";
+        bool isON = controller.getValueRaw() == (uint8_t)ON;
+        String buttonLabel = isON ? "TURN OFF" : "TURN ON";
 
         body += "<p>" + controller.name + " " + controller.getValue() + "</p>";
         body += "<p><a href='" + toggleUrlPath + "'>";
-        body += "<button>" + buttonLabel + "</button></a></p>";
+        body += String("<button style='background-color:") + (isON ? "green" : "grey") + "'>" + buttonLabel + "</button></a></p>";
     }
 
     body += "</body></html>";
