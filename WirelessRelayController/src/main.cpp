@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 
@@ -15,14 +16,18 @@ void onChange(Controller* cont) {
 }
 
 std::list<Controller>* setupController() {
-    controllers.push_back(Controller("Pin1", 4, OFF, *onChange));  // GPIO4 D1
-    controllers.push_back(Controller("Pin2", 5, OFF, *onChange));  // GPIO5 D2
+    EEPROM.begin(sizeof(uint8_t) * 2);
+
+    controllers.push_back(Controller(0, "Pin1", 4, OFF, *onChange));  // GPIO4 D1
+    controllers.push_back(Controller(1, "Pin2", 5, OFF, *onChange));  // GPIO5 D2
+
     return &controllers;
 }
 
 void setup() {
     Serial.begin(9600);
     pinMode(INDICATOR_LED, OUTPUT);
+    server.useController(setupController());
 
     // Connect to Wi-Fi network with SSID and password
     Serial.println("Connecting to SSID: " + ssid);
@@ -35,7 +40,6 @@ void setup() {
     Serial.println("Connected to SSID: " + ssid);
     Serial.println("IP address: " + WiFi.localIP().toString());
 
-    server.useController(setupController());
     server.begin();
     Serial.println("HTTP server started");
     digitalWrite(INDICATOR_LED, OFF);
